@@ -13,6 +13,9 @@ A utility payload that discovers, prints, and exports kernel offsets for your PS
 - Dumps known kernel offsets (allproc, security_flags, qa_flags, rootvnode, etc.)
 - Exports offsets in multiple formats (JSON, C header, JavaScript)
 - Includes structure field offsets (proc, ucred, filedesc)
+- **Diff comparison** - compare offsets between firmware versions
+- **Validation** - verify offsets point to expected values
+- **Active discovery** - scan kernel memory to find correct offsets for unknown FW
 
 **Usage:**
 ```bash
@@ -26,7 +29,7 @@ The payloads include known offsets for:
 - 4.03, 4.50, 4.51
 - 5.00, 5.50
 - 6.00
-- 7.00, 7.61
+- 7.00, 7.20, 7.61 (all use same offsets)
 
 ## Requirements
 
