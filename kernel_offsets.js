@@ -2,16 +2,59 @@
  * Kernel Offset Dumper Payload for PS5
  * Based on Y2JB framework
  *
- * Simply prints all known kernel offsets for your firmware version.
- * Easy to share - just change FIRMWARE_VERSION for your console.
+ * Auto-detects firmware and dumps kernel offsets to log server.
+ * Run log_server.py on your PC first!
  *
  * License: AGPL-3.0-or-later
  */
 
 (async function() {
+    // ============================================
+    // LOG SERVER CONFIG - CHANGE THIS
+    // ============================================
+    const LOG_SERVER_IP = "192.168.1.100";  // Your PC's IP
+    const LOG_SERVER_PORT = 9023;            // Default Y2JB log port
+    // ============================================
+
+    // Buffer to collect all output
+    let logBuffer = [];
+
     function log(msg) {
+        logBuffer.push(msg);
         if (typeof print === 'function') print(msg);
         if (typeof console !== 'undefined') console.log(msg);
+    }
+
+    // Send logs to server via fetch (HTTP POST)
+    async function sendToLogServer() {
+        const output = logBuffer.join('\n');
+
+        try {
+            // Method 1: Try fetch (works in modern WebKit)
+            if (typeof fetch !== 'undefined') {
+                await fetch(`http://${LOG_SERVER_IP}:${LOG_SERVER_PORT}/log`, {
+                    method: 'POST',
+                    body: output,
+                    headers: { 'Content-Type': 'text/plain' }
+                });
+                return true;
+            }
+
+            // Method 2: Try XMLHttpRequest
+            if (typeof XMLHttpRequest !== 'undefined') {
+                return new Promise((resolve) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', `http://${LOG_SERVER_IP}:${LOG_SERVER_PORT}/log`, true);
+                    xhr.setRequestHeader('Content-Type', 'text/plain');
+                    xhr.onload = () => resolve(true);
+                    xhr.onerror = () => resolve(false);
+                    xhr.send(output);
+                });
+            }
+        } catch (e) {
+            // Silently fail - output is still in console
+        }
+        return false;
     }
 
     function hex(n) {
@@ -200,7 +243,19 @@
 
     log("");
     log("========================================");
-    log("[+] Done! Copy the offsets above.");
+    log("[+] Done!");
     log("========================================");
+
+    // Send all output to log server
+    log("");
+    log(`[*] Sending to ${LOG_SERVER_IP}:${LOG_SERVER_PORT}...`);
+
+    const sent = await sendToLogServer();
+    if (sent) {
+        log("[+] Sent to log server successfully!");
+    } else {
+        log("[!] Could not send to log server");
+        log("[*] Check LOG_SERVER_IP and run log_server.py");
+    }
 
 })();

@@ -9,19 +9,32 @@ Debug and utility payloads for PS5 (Prospero) kernel research, designed for use 
 A utility payload that discovers, prints, and exports kernel offsets for your PS5 firmware version.
 
 **Features:**
-- Detects firmware version
+- Auto-detects firmware version at runtime
+- Dumps runtime info (userAgent, platform, screen, etc.)
 - Dumps known kernel offsets (allproc, security_flags, qa_flags, rootvnode, etc.)
-- Exports offsets in multiple formats (JSON, C header, JavaScript)
 - Includes structure field offsets (proc, ucred, filedesc)
-- **Diff comparison** - compare offsets between firmware versions
-- **Validation** - verify offsets point to expected values
-- **Active discovery** - scan kernel memory to find correct offsets for unknown FW
+- Sends output to log server on your PC
+- Copy-paste format for easy use
 
 **Usage:**
+
+1. Edit `kernel_offsets.js` and set your PC's IP:
+```javascript
+const LOG_SERVER_IP = "192.168.1.100";  // Your PC's IP
+const LOG_SERVER_PORT = 9023;
+```
+
+2. Start the log server on your PC:
 ```bash
-# Send payload to PS5 using Y2JB payload_sender
+python log_server.py
+```
+
+3. Send payload to PS5:
+```bash
 python payload_sender.py kernel_offsets.js
 ```
+
+4. Check log server output for the dumped offsets
 
 ## Supported Firmware Versions
 
