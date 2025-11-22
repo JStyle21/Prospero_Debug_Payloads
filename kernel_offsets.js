@@ -9,12 +9,6 @@
  */
 
 (async function() {
-    // ============================================
-    // CONFIGURATION - CHANGE THIS FOR YOUR FW
-    // ============================================
-    const FIRMWARE_VERSION = "7.20";
-    // ============================================
-
     function log(msg) {
         if (typeof print === 'function') print(msg);
         if (typeof console !== 'undefined') console.log(msg);
@@ -22,6 +16,44 @@
 
     function hex(n) {
         return '0x' + n.toString(16);
+    }
+
+    // Auto-detect firmware version at runtime
+    function detect_firmware() {
+        let fw = "unknown";
+
+        // Method 1: Check if Y2JB provides firmware info
+        if (typeof window !== 'undefined' && window.firmware) {
+            fw = window.firmware;
+        }
+        // Method 2: Check navigator userAgent for WebKit version hints
+        else if (typeof navigator !== 'undefined' && navigator.userAgent) {
+            const ua = navigator.userAgent;
+            // PS5 WebKit versions map to firmware
+            if (ua.includes('PlayStation 5')) {
+                // Extract version hints from userAgent
+                if (ua.includes('WebKit/605')) fw = "4.03";
+                else if (ua.includes('WebKit/610')) fw = "5.00";
+                else if (ua.includes('WebKit/615')) fw = "6.00";
+                else if (ua.includes('WebKit/618')) fw = "7.00";
+            }
+        }
+        // Method 3: Check global fw variable (set by some exploits)
+        else if (typeof fw_version !== 'undefined') {
+            fw = fw_version;
+        }
+        // Method 4: Check for common Y2JB globals
+        else if (typeof config !== 'undefined' && config.firmware) {
+            fw = config.firmware;
+        }
+
+        return fw;
+    }
+
+    // Get current date/time
+    function get_timestamp() {
+        const now = new Date();
+        return now.toISOString();
     }
 
     // All known kernel offsets by firmware version
@@ -82,18 +114,55 @@
     };
 
     // Main
+    const FIRMWARE_VERSION = detect_firmware();
+    const timestamp = get_timestamp();
+
     log("========================================");
     log("  PS5 Kernel Offset Dumper");
-    log(`  Firmware: ${FIRMWARE_VERSION}`);
     log("========================================");
+    log("");
+
+    // Dump runtime environment info
+    log("=== RUNTIME INFO ===");
+    log("");
+    log(`Timestamp: ${timestamp}`);
+    log(`Detected FW: ${FIRMWARE_VERSION}`);
+
+    if (typeof navigator !== 'undefined') {
+        log(`UserAgent: ${navigator.userAgent}`);
+        log(`Platform: ${navigator.platform || 'N/A'}`);
+        log(`Language: ${navigator.language || 'N/A'}`);
+    }
+
+    if (typeof window !== 'undefined') {
+        log(`Screen: ${window.screen?.width || '?'}x${window.screen?.height || '?'}`);
+        if (window.firmware) log(`window.firmware: ${window.firmware}`);
+    }
+
+    if (typeof fw_version !== 'undefined') {
+        log(`fw_version global: ${fw_version}`);
+    }
+
     log("");
 
     // Check if firmware is supported
     const testOffset = OFFSETS.allproc[FIRMWARE_VERSION];
     if (!testOffset) {
-        log(`[!] ERROR: Firmware ${FIRMWARE_VERSION} not found!`);
+        log(`[!] WARNING: Firmware "${FIRMWARE_VERSION}" not in offset table!`);
         log("[*] Supported: 4.03, 4.50, 4.51, 5.00, 5.50, 6.00, 7.00, 7.20, 7.61");
-        log("[*] Add your firmware offsets to the OFFSETS table above");
+        log("[*] Will show all available offsets below");
+        log("[*] Add your firmware offsets to the OFFSETS table");
+        log("");
+
+        // Show all available firmwares
+        log("=== ALL AVAILABLE OFFSETS ===");
+        log("");
+        for (const [name, versions] of Object.entries(OFFSETS)) {
+            log(`${name}:`);
+            for (const [fw, offset] of Object.entries(versions)) {
+                log(`  ${fw}: ${hex(offset)}`);
+            }
+        }
         return;
     }
 
